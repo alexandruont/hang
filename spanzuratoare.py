@@ -41,6 +41,9 @@ def hangman(hint):
     cuvintePosibile = [word for word in cuvintePosibile if all(word[index] == hint[index] for index in litereCunoscute)]
     while True:
         if len(cuvintePosibile) == 1:
+            askCounter += 1
+            global incercariTotale
+            incercariTotale += 1
             print("Cuvantul tau este:" + str(cuvintePosibile))
             print("Cuvantul a fost gasit in: " + str(askCounter) + " incercari")
             break
