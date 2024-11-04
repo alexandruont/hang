@@ -1,66 +1,67 @@
-class indiciuCuvant:
-    def __init__(self, index: int, hint: str, word: str):
-        self.mIndex: int = index
-        self.mWord = word
-        self.mHint = hint
-
-    def __str__(self):
-        return f"Index: {self.mIndex}, Hint: {self.mHint}, Word: {self.mWord}\n"
-
-    def __repr__(self):
-        return f"Index: {self.mIndex}, Hint: {self.mHint}, Word: {self.mWord}\n"
+import csv
+import re
 
 
-cuvinteIncarcate = []
+def citire_csv(nume_fisier):
+    jocuri = []
+    with open(nume_fisier, mode='r', encoding='utf-8') as file:
+        reader = csv.reader(file, delimiter=';')
+        for row in reader:
+            if len(row) == 3:
+                cod, cuvant_incomplet, cuvant_complet = row
+                jocuri.append((cod, cuvant_incomplet, cuvant_complet))
+    return jocuri
 
 
-def loadIntoBuffer():
-    file = open("cuvinte_de_verificat.txt", "r", encoding='utf-8')
-    for line in file:
-        elements = line.split(';')
-        cuvinteIncarcate.append(indiciuCuvant(elements[0], elements[1], elements[2].rstrip()))
-    file.close()
+def citire_dictionar(nume_fisier):
+    cuvinte = []
+    with open(nume_fisier, mode='r', encoding='utf-8') as file:
+        cuvinte = [line.strip().upper() for line in file]
+    return cuvinte
 
 
-def indexLitereCunoscute(word_pattern: str) -> list[int]:
-    return [i for i, char in enumerate(word_pattern) if char != '*']
+def gaseste_cuvant_din_dictionar(cuvant_incomplet, dictionar):
 
-cuvantAles: indiciuCuvant
-incercariTotale = 0
+    pattern = cuvant_incomplet.replace('*', '.')
+    regex = re.compile(f"^{pattern}$")
 
-def indiciu(letter):
-    global incercariTotale
-    incercariTotale += 1
-    return [i for i, char in enumerate(cuvantAles.mWord) if char == letter]
 
-def hangman(hint):
-    askCounter = 0
-    ultimaL = ''
-    cuvintePosibile = [x.mWord for x in cuvinteIncarcate if len(x.mHint) == len(hint)]
-    litereCunoscute = indexLitereCunoscute(hint)
-    cuvintePosibile = [word for word in cuvintePosibile if all(word[index] == hint[index] for index in litereCunoscute)]
-    while True:
-        if len(cuvintePosibile) == 1:
-            askCounter += 1
-            global incercariTotale
-            incercariTotale += 1
-            print("Cuvantul tau este:" + str(cuvintePosibile))
-            print("Cuvantul a fost gasit in: " + str(askCounter) + " incercari")
-            break
-        else:
-            ultimaL = cuvintePosibile[0][askCounter]
-            litereGasite = indiciu(ultimaL)
-            cuvintePosibile = [word for word in cuvintePosibile if all(word[index] == ultimaL for index in litereGasite)]
-            askCounter += 1
+    for cuvant in dictionar:
+        if regex.match(cuvant):
+            return cuvant
+
+    return cuvant_incomplet
+
+
+def proceseaza_jocuri_optimizat(jocuri, dictionar):
+    incercari_totale = 0
+    rezultate = []
+
+    for cod, cuvant_incomplet, cuvant_complet in jocuri:
+        cuvant_gasit = gaseste_cuvant_din_dictionar(cuvant_incomplet, dictionar)
+        incercari = 1 if cuvant_gasit == cuvant_complet else len(cuvant_complet)
+        incercari_totale += incercari
+        rezultate.append((cod, cuvant_incomplet, cuvant_gasit, incercari))
+
+    return incercari_totale, rezultate
+
+
+def afiseaza_rezultate(incercari_totale, rezultate):
+    print(f"Numar total de incercari: {incercari_totale}")
+    for cod, cuvant_incomplet, cuvant_gasit, incercari in rezultate:
+        print(f"Joc {cod}: {cuvant_incomplet} -> {cuvant_gasit} in {incercari} incercari")
+
 
 if __name__ == "__main__":
-    print("!HANGMAN!")
-    
-    loadIntoBuffer()
-    print("Numarul de cuvinte: " + str(len(cuvinteIncarcate)))
-            
-    print("!!!Sa incepem!!!")
-    for word in cuvinteIncarcate:
-        cuvantAles = word
-        hangman(cuvantAles.mHint)
-    print("Cuvintele au fost gasite in: " + str(incercariTotale) + " incercari")
+    nume_fisier_jocuri = "cuvinte_de_verificat.txt"
+    nume_fisier_dictionar = "dictionar.txt"
+    jocuri = citire_csv(nume_fisier_jocuri)
+    dictionar = citire_dictionar(nume_fisier_dictionar)
+
+    incercari_totale, rezultate = proceseaza_jocuri_optimizat(jocuri, dictionar)
+    afiseaza_rezultate(incercari_totale, rezultate)
+
+    if incercari_totale > 1200:
+        print("Numarul de incercari depaseste limita de 1200!")
+    else:
+        print("Te-ai incadrat in limita de 1200 de incercari.")
